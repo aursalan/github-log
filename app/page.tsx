@@ -22,7 +22,7 @@ export default function Home() {
   const fetchEvents = async () => {
     try {
       const res = await fetch(
-        "https://7e08de3b8067.ngrok-free.app/webhook/events"
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/webhook/events`
       );
       if (!res.ok) return;
       setEvents(await res.json());
