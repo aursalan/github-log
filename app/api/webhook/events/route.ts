@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import clientPromise from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 
@@ -13,7 +15,6 @@ export async function GET() {
       .limit(50)
       .toArray();
 
-    // Convert _id to string for Next.js
     const safeEvents = events.map((e) => ({
       ...e,
       _id: e._id.toString(),
