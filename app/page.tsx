@@ -24,7 +24,7 @@ export default function Home() {
   const fetchEvents = async () => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/webhook/events`
+        "/api/webhook/events"
       );
       if (!res.ok) return;
 
