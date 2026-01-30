@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📊 GitHub Log 
 
-## Getting Started
+> A Next.js-based UI that visualizes GitHub activity logs stored in MongoDB.
 
-First, run the development server:
+- Displays GitHub actions such as pushes, pull requests, and merges.
+- Presents logs in a clean, minimal, developer-friendly interface.
+- Designed to resemble real-world GitHub activity monitoring tools.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Table of Contents
+
+1. [Tech Stack and Prerequisites](#1-tech-stack-and-prerequisites)
+2. [Architecture Overview](#2-architecture-overview)
+3. [How to Use the Project](#3-how-to-use-the-project)
+
+## 1. Tech Stack and Prerequisites
+
+**Frontend:** Next.js, Tailwind CSS\
+**Backend:** Next.js, Vercel\
+**Prerequisites:** Git, MongoDB Community Edition, Node.js
+
+## 2. Architecture Overview
+```
+action-repo
+│
+│  GitHub Webhook
+│
+▼
+webhook-repo (Flask)
+│
+│  - Write-only webhook endpoint
+│
+▼
+MongoDB Atlas Cluster
+│
+│  - Persistent event storage
+│
+▲
+│  Poll every 15 seconds
+│
+github-log (Next.js)
+│
+│  - Client-side polling
+│  - Minimal data processing
+│  - UI-focused responsibilities
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 3. How to Use the Project
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+git clone https://github.com/aursalan/github-log.git
+cd github-log
+npm install
+npm run dev
+```
+The application will be available at:
+```
+http://localhost:3000
+```
