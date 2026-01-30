@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GitCommit, GitPullRequest, GitMerge, GitPullRequestArrow } from "lucide-react";
+import { FaGithub } from "react-icons/fa";
 
 /* ================= TYPES ================= */
 
@@ -17,7 +17,9 @@ interface EventData {
 
 export default function Home() {
   const [events, setEvents] = useState<EventData[]>([]);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState(15);
 
   const fetchEvents = async () => {
     try {
@@ -25,103 +27,143 @@ export default function Home() {
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/webhook/events`
       );
       if (!res.ok) return;
-      setEvents(await res.json());
-      setLastUpdated(new Date());
+
+      const data: EventData[] = await res.json();
+      setEvents(data);
+
+      setLastUpdated(
+        new Date().toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+
+      setCountdown(15);
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchEvents();
-    const i = setInterval(fetchEvents, 15000);
-    return () => clearInterval(i);
+
+    const fetchInterval = setInterval(fetchEvents, 15000);
+    const countdownInterval = setInterval(() => {
+      setCountdown((c) => (c > 0 ? c - 1 : 0));
+    }, 1000);
+
+    return () => {
+      clearInterval(fetchInterval);
+      clearInterval(countdownInterval);
+    };
   }, []);
 
   return (
-    <div className="min-h-screen w-screen bg-white text-neutral-900">
-      
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-white border-b border-neutral-200">
-        <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-          
-          <div>
-            <h1 className="text-lg font-medium text-neutral-800">
-              GitHub Log
-            </h1>
-            <p className="text-sm text-neutral-500 mt-0.5 max-w-xl">
-              Track pushes, pull requests, and merges.
-            </p>
+    <div className="min-h-screen w-screen bg-white text-neutral-900 flex flex-col relative">
+      {/* ================= HEADER ================= */}
+      <header className="sticky top-0 z-10 bg-[#f5f7fa] backdrop-blur">
+        <div className="px-4 h-12 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <FaGithub className="w-5 h-5 text-neutral-900" />
+            <span className="text-sm font-semibold">GitHub Logs</span>
           </div>
 
           {lastUpdated && (
-            <div className="text-xs text-neutral-400 whitespace-nowrap sm:pt-1">
-              Updated{" "}
-              {lastUpdated.toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+            <div className="text-[11px] text-neutral-400 font-mono">
+              Last Updated: {lastUpdated}
             </div>
           )}
         </div>
+
+        <div className="h-px bg-neutral-200/40" />
       </header>
 
-      {/* Content */}
-      <main className="px-3 sm:px-6 py-4">
-        <div className="divide-y divide-neutral-200 font-mono text-sm">
-          {events.length === 0 && (
-            <div className="px-4 py-6 text-neutral-400">
-              waiting for events…
+      {/* ================= CONTENT ================= */}
+      <main className="flex-1 px-4 py-4 font-mono text-xs">
+        {loading && (
+          <div className="h-full flex items-center justify-center">
+            <div className="flex items-center gap-2 text-neutral-400">
+              <span className="animate-pulse">●</span>
+              <span>listening for events</span>
             </div>
-          )}
+          </div>
+        )}
 
-          {events.map((event, i) => (
-            <LogRow key={i} event={event} />
+        {!loading && events.length === 0 && (
+          <div className="text-neutral-400 italic">no events yet</div>
+        )}
+
+        {!loading &&
+          events.map((event, idx) => (
+            <div key={`${event.author}-${event.action}-${event.timestamp}`}>
+              <LogLine event={event} />
+              {idx !== events.length - 1 && (
+                <div className="ml-2 my-1 h-px bg-neutral-200/40" />
+              )}
+            </div>
           ))}
-        </div>
       </main>
+
+      {/* ================= COUNTDOWN WIDGET ================= */}
+      <div className="fixed bottom-4 right-4 z-20">
+        <div className="px-3 py-2 rounded-md bg-white border border-neutral-200/50 shadow-sm font-mono text-[11px] text-neutral-500">
+          refreshing in <span className="text-neutral-800">{countdown}s</span>
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ================= LOG ROW ================= */
+/* ================= LOG LINE ================= */
 
-function LogRow({ event }: { event: EventData }) {
-  const config = {
-    PUSH: {
-      icon: <GitCommit size={14} />,
-      text: `${event.author} pushed → ${event.to_branch}`,
-    },
-    PULL_REQUEST: {
-      icon: <GitPullRequestArrow size={14} />,
-      text: `${event.author} opened pull request ${event.from_branch} → ${event.to_branch}`,
-    },
-    MERGE: {
-      icon: <GitMerge size={14} />,
-      text: `${event.author} merged ${event.from_branch} → ${event.to_branch}`,
-    },
-  }[event.action];
-
+function LogLine({ event }: { event: EventData }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-4 py-3">
-      
-      {/* Left cluster */}
-      <div className="flex items-center gap-2 shrink-0 text-neutral-500">
-        {config.icon}
-        <span className="sm:hidden text-neutral-400">
-          {event.timestamp}
-        </span>
-      </div>
+    <div className="px-2 py-1 leading-relaxed text-neutral-800 hover:bg-neutral-100/40 rounded transition">
+      {event.action === "PUSH" && (
+        <>
+          <span className="font-semibold">{event.author}</span>{" "}
+          pushed to{" "}
+          <span className="font-semibold text-neutral-700">
+            {event.to_branch}
+          </span>{" "}
+          on{" "}
+          <span className="text-neutral-400">{event.timestamp}</span>
+        </>
+      )}
 
-      {/* Timestamp (desktop) */}
-      <div className="hidden sm:block text-neutral-400 shrink-0 whitespace-nowrap">
-        {event.timestamp}
-      </div>
+      {event.action === "PULL_REQUEST" && (
+        <>
+          <span className="font-semibold">{event.author}</span>{" "}
+          submitted a pull request from{" "}
+          <span className="font-semibold text-neutral-700">
+            {event.from_branch}
+          </span>{" "}
+          to{" "}
+          <span className="font-semibold text-neutral-700">
+            {event.to_branch}
+          </span>{" "}
+          on{" "}
+          <span className="text-neutral-400">{event.timestamp}</span>
+        </>
+      )}
 
-      {/* Message */}
-      <div className="flex-1 text-neutral-800 leading-relaxed">
-        {config.text}
-      </div>
+      {event.action === "MERGE" && (
+        <>
+          <span className="font-semibold">{event.author}</span>{" "}
+          merged branch{" "}
+          <span className="font-semibold text-neutral-700">
+            {event.from_branch}
+          </span>{" "}
+          to{" "}
+          <span className="font-semibold text-neutral-700">
+            {event.to_branch}
+          </span>{" "}
+          on{" "}
+          <span className="text-neutral-400">{event.timestamp}</span>
+        </>
+      )}
     </div>
   );
 }
