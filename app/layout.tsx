@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GitHub Logs",
+  title: "GitHub Log",
   description: "Live GitHub webhook event logs",
   icons: {
     icon: [
